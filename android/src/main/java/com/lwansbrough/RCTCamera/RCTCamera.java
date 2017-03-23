@@ -164,6 +164,10 @@ public class RCTCamera {
       return _barcodeScannerEnabled;
     }
 
+    public boolean isPreviewEnabled() {
+        return _previewEnabled;
+    }
+
     public void setBarcodeScannerEnabled(boolean barcodeScannerEnabled) {
         _barcodeScannerEnabled = barcodeScannerEnabled;
     }

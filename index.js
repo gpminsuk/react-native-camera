@@ -52,6 +52,7 @@ function convertNativeProps(props) {
   }
 
   newProps.barcodeScannerEnabled = typeof props.onBarCodeRead === 'function'
+  newProps.previewEnabled = typeof props.onPreview === 'function'
 
   return newProps;
 }
@@ -96,7 +97,9 @@ export default class Camera extends Component {
     ]),
     keepAwake: PropTypes.bool,
     onBarCodeRead: PropTypes.func,
+    onPreview: PropTypes.func,
     barcodeScannerEnabled: PropTypes.bool,
+    previewEnabled: PropTypes.bool,
     onFocusChanged: PropTypes.func,
     onZoomChanged: PropTypes.func,
     mirrorImage: PropTypes.bool,
@@ -150,6 +153,7 @@ export default class Camera extends Component {
 
   async componentWillMount() {
     this._addOnBarCodeReadListener()
+    this._addOnPreviewListener()
 
     let { captureMode } = convertNativeProps({ captureMode: this.props.captureMode })
     let hasVideoAndAudio = this.props.captureAudio && captureMode === Camera.constants.CaptureMode.video
@@ -163,6 +167,7 @@ export default class Camera extends Component {
 
   componentWillUnmount() {
     this._removeOnBarCodeReadListener()
+    this._removeOnPreviewListener()
 
     if (this.state.isRecording) {
       this.stopCapture();
@@ -170,9 +175,12 @@ export default class Camera extends Component {
   }
 
   componentWillReceiveProps(newProps) {
-    const { onBarCodeRead } = this.props
+    const { onBarCodeRead, onPreview } = this.props
     if (onBarCodeRead !== newProps.onBarCodeRead) {
       this._addOnBarCodeReadListener(newProps)
+    }
+    if (onPreview !== newProps.onPreview) {
+      this._addOnPreviewListener(newProps)
     }
   }
 
@@ -193,6 +201,23 @@ export default class Camera extends Component {
     }
   }
 
+  _addOnPreviewListener(props) {
+    const { onPreview } = props || this.props
+    this._removePreviewListener()
+    if (onPreview) {
+      this.cameraPreviewListener = Platform.select({
+        ios: NativeAppEventEmitter.addListener('CameraPreview', this._onPreview),
+        android: DeviceEventEmitter.addListener('CameraPreviewAndroid',  this._onPreview)
+      })
+    }
+  }
+  _removePreviewListener() {
+    const listener = this.cameraBarCodeReadListener
+    if (listener) {
+      listener.remove()
+    }
+  }
+
   render() {
     const style = [styles.base, this.props.style];
     const nativeProps = convertNativeProps(this.props);
@@ -203,6 +228,12 @@ export default class Camera extends Component {
   _onBarCodeRead = (data) => {
     if (this.props.onBarCodeRead) {
       this.props.onBarCodeRead(data)
+    }
+  };
+
+  _onPreview = (data) => {
+    if (this.props.onPreview) {
+      this.props.onPreview(data)
     }
   };
 
